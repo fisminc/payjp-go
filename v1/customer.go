@@ -143,9 +143,12 @@ func (c CustomerService) List() *CustomerListCaller {
 }
 
 // AddCardToken はトークンIDを指定して、新たにカードを追加します。ただし同じカード番号および同じ有効期限年/月のカードは、重複追加することができません。
-func (c CustomerService) AddCardToken(customerID, token string) (*CardResponse, error) {
+func (c CustomerService) AddCardToken(customerID, token string, isDefault bool) (*CardResponse, error) {
 	qb := newRequestBuilder()
 	qb.Add("card", token)
+	if isDefault {
+		qb.Add("default", isDefault)
+	}
 
 	request, err := http.NewRequest("POST", c.service.apiBase+"/customers/"+customerID+"/cards", qb.Reader())
 	if err != nil {
@@ -161,7 +164,10 @@ func (c CustomerService) AddCardToken(customerID, token string) (*CardResponse, 
 	return parseCard(c.service, body, &CardResponse{}, customerID)
 }
 
-func (c CustomerService) postCard(customerID, resourcePath string, card Card, result *CardResponse) (*CardResponse, error) {
+func (c CustomerService) postCard(customerID, resourcePath string, card Card, result *CardResponse) (
+	*CardResponse,
+	error,
+) {
 	qb := newRequestBuilder()
 	qb.AddCard(card)
 
@@ -397,8 +403,8 @@ func (c *CustomerResponse) AddCard(card Card) (*CardResponse, error) {
 }
 
 // AddCardToken はトークンIDを指定して、新たにカードを追加します。ただし同じカード番号および同じ有効期限年/月のカードは、重複追加することができません。
-func (c *CustomerResponse) AddCardToken(token string) (*CardResponse, error) {
-	return c.service.Customer.AddCardToken(c.ID, token)
+func (c *CustomerResponse) AddCardToken(token string, isDefault bool) (*CardResponse, error) {
+	return c.service.Customer.AddCardToken(c.ID, token, isDefault)
 }
 
 // GetCard は顧客の特定のカード情報を取得します。
